@@ -10,7 +10,7 @@ Rnaseq pipeline provides meaningful programs to analyse RNA sequencing data obta
 -	[Trim galore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/) Adapter and quality trimming
 
 
-## **2.  Contamination removal**
+## **2.  Contamination Removal**
 
 -	[BBSplit](http://seqanswers.com/forums/showthread.php?t=41288) Removal of genome contaminants
 -	[SortMeRNA](https://github.com/biocore/sortmerna) Removal of ribosomal RNA
@@ -47,7 +47,7 @@ Rnaseq pipeline provides meaningful programs to analyse RNA sequencing data obta
 
 
 
-## **Instalation**
+## **Installation**
 
 Rnaseq is built using Nextflow, a workflow tool to run tasks across multiple compute infrastructures and it also uses Docker/Singularity containers making installation trivial and results highly reproducible. This guide covers the installation and configuration for Ubuntu.
 
