@@ -1,0 +1,1 @@
+nextflow run nf-core/fetchngs         --input IDs.txt       --input_type sra       --nf_core_pipeline Astrocyte        --max_cpus 8       --max_memory '230.GB'       --force_sratools_download       -profile docker 
