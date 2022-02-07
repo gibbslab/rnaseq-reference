@@ -23,7 +23,7 @@ Rnaseq pipeline provides meaningful programs to analyse RNA sequencing data obta
 -	[HiSAT2](https://daehwankimlab.github.io/hisat2/) NO QUANTIFICATION
 -	[SAMtools](https://sourceforge.net/projects/samtools/files/samtools/) Sort and index alignments
 -	[UMI-tools](https://github.com/CGATOxford/UMI-tools) UMI-based deduplication
--	[picard MarkDuplicates](https://broadinstitute.github.io/picard/)
+-	[picard MarkDuplicates](https://broadinstitute.github.io/picard/) Duplicate read marking
 -	[StringTie](https://ccb.jhu.edu/software/stringtie/) Transcript assembly and quantification
 -	[bedGraphToBigWig](http://hgdownload.soe.ucsc.edu/admin/exe/) Create bigWig coverage files
 
@@ -174,6 +174,8 @@ bash rnaseq.sh -c ~/Astrocyte.csv -r ~/references/Homo_sapiens/Ensembl/GRCh38/Se
 -	`-p:` CPUs
 
 -	`-m:` Max memory to be used
+
+- `-t:` A custom configuration file to be used in the pipeline. An example is shown in `data` folder
 
 
 
