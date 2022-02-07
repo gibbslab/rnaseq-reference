@@ -62,10 +62,11 @@ fi
 # 11) Path to libraries
 # 12) Text file containing paths with fasta files to SortMeRNA database
 # 13) Path to indices
+# 14) Setting custom parameters
 # ---------------------------------------------------------------------
 
 
-while getopts c:n:r:a:s:b:e:x:p:m:l:d:i: flag
+while getopts c:n:r:a:s:b:e:x:p:m:l:d:i:t: flag
 do
     case "${flag}" in
         c) csv=${OPTARG};;
@@ -81,6 +82,7 @@ do
         l) lib=${OPTARG};;
         d) rRNA=${OPTARG};;
         i) idx=${OPTARG};;
+        t) config=${OPTARG};;
        \?) echo "Invalid option: $OPTARG" 1>&2;;
         :) echo "Invalid option: $OPTARG requires an argument" 1>&2;;
     esac
@@ -110,11 +112,12 @@ if [ $# -eq 0 ]; then
 	 -b: Specifies the alignment algorithm to use. Option: 'star_salmon/star_rsem/hisat2'
          -e: Specifies the pseudo aligner to use. Option: 'salmon'
  	 -p: CPUs
- 	 -m: Max memory to be used (ej. -m 100.GB) Please note the syntaxis
+         -m: Max memory to be used (ej. -m 100.GB) Please note the syntaxis
 	 -x: Resume a previous Job. Options: y/n
          -l: Path to libraries directory
          -d: Text file containing paths to create the database for SortMeRNA. Options: {empty/TXT with paths}
 	 -i: Create or not a new Genome index
+         -t: Setting custom parameters
 	    
 	 "
 
@@ -260,7 +263,6 @@ fi
 # Optional: TXT with paths to rRNA databases
 if [ -z "${rRNA}" ];then
 	printf "Missing TXT File. Please provide it and run again.\n"
-	exit 1
 else
 	# Target is a file (f)
 	t="f"
@@ -273,7 +275,25 @@ else
 	
 	unset ${t}
 fi
+
+
+# Optional: Custom config
+if [ -z "${config}" ];then
+	printf "No parameter options are supplied. You can create a local config file and use it.\n"
+	config=0
+else
+	# Target is a file (f)
+	t="f"
+	exists ${config} ${t}	
+	# Check return value, can be 1 or 0
+	if [ $? -eq 0 ];then
+		printf "${config} not found. Quitting.\n"
+		exit 1	
+	fi
 	
+	unset ${t}
+fi
+
 
 # Optional: Path to indeces depending on the aligner type
 # NOTE: Both the STAR and RSEM indices should be present in the same path
@@ -296,7 +316,9 @@ else
         # Check return value, can be 1 or 0
         if [ $? -eq 0 ];then
     	printf "${idx} not found. Quitting.\n"
-    	exit 1	
+        exit 1
+	else
+        idx="salmon"
         fi
         printf "Using genome index: ${idx}\n"
 
@@ -307,7 +329,9 @@ else
         # Check return value, can be 1 or 0
         if [ $? -eq 0 ];then
     	printf "${idx} not found. Quitting.\n"
-    	exit 1	
+        exit 1
+	else
+        idx="rsem"
         fi
         printf "Using genome index: ${idx}\n"
 
@@ -318,7 +342,9 @@ else
         # Check return value, can be 1 or 0
         if [ $? -eq 0 ];then
     	printf "${idx} not found. Quitting.\n"
-    	exit 1	
+        exit 1
+	else
+        idx="hisat2"
         fi
         printf "Using genome index: ${idx}\n"
     fi
@@ -396,28 +422,38 @@ command="nextflow run nf-core/rnaseq $again \
       -profile docker "
 # If the user provide a pseudo-aligner, it will be set by default
 # Append salmon as pseudo-aligner to command line
+
 if [[ "${pseuAlign}" == "salmon" ]];then
     command="${command} --pseudo_aligner ${pseuAlign}"
 fi
 
 # If user does not provide indices, it should include the option to create and store them
 # Append salmon_index to command line
+
+link="./results/genome"
+
 if [[ "${idx}" == "salmon" ]];then
-    mkdir -p ${idx}
-    path=$(printf "$(cd "$(dirname "${idx}")" && pwd)/$(basename "${idx}")")
+    mkdir -p ${link}/${idx}
+    path=$(printf "$(cd "$(dirname "${link}/${idx}")" && pwd)/$(basename "${link}/${idx}")")
     command="${command} --salmon_index ${path}"
 
 # Append rsem_index to command line
 elif [[ "${idx}" == "rsem" ]];then
-    mkdir -p ${idx}
-    path=$(printf "$(cd "$(dirname "${idx}")" && pwd)/$(basename "${idx}")")
+    mkdir -p ${link}/${idx}
+    path=$(printf "$(cd "$(dirname "${link}/${idx}")" && pwd)/$(basename "${link}/${idx}")")
     command="${command} --rsem_index ${path}"
 
 # Append hisat2_index to command line
 else [[ "${idx}" == "hisat2" ]]
-    mkdir -p ${idx}
-    path=$(printf "$(cd "$(dirname "${idx}")" && pwd)/$(basename "${idx}")")
+    mkdir -p ${link}/${idx}
+    path=$(printf "$(cd "$(dirname "${link}/${idx}")" && pwd)/$(basename "${link}/${idx}")")
     command="${command} --hisat2_index ${path}"
+fi
+
+# If the user provides custom settings, it is added to the pipeline
+
+if [[ "${config}" != "0" ]];then
+    command="${command} -c ${config}"
 fi
 
 printf "All set up. Running the following command: \n${command}\n"
