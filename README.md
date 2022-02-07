@@ -10,13 +10,13 @@ Rnaseq pipeline provides meaningful programs to analyse RNA sequencing data obta
 -	[Trim galore](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/) Adapter and quality trimming
 
 
-## **2.  Contamination removal **
+## **2.  Contamination Removal**
 
 -	[BBSplit](http://seqanswers.com/forums/showthread.php?t=41288) Removal of genome contaminants
 -	[SortMeRNA](https://github.com/biocore/sortmerna) Removal of ribosomal RNA
 
 
-## **3.  Alignment and Quantification **
+## **3.  Alignment and Quantification**
 
 -	[STAR](https://github.com/alexdobin/STAR) using [Salmon](https://combine-lab.github.io/salmon/)
 -	[STAR](https://github.com/alexdobin/STAR) via [RSEM](https://github.com/deweylab/RSEM)
@@ -28,7 +28,7 @@ Rnaseq pipeline provides meaningful programs to analyse RNA sequencing data obta
 -	[bedGraphToBigWig](http://hgdownload.soe.ucsc.edu/admin/exe/) Create bigWig coverage files
 
 
-## **4.  Quality Control and Normalization **
+## **4.  Quality Control and Normalization**
 
 -	[RSeQC](http://rseqc.sourceforge.net/) An RNA-seq quality control package
 -	[QualiMap](http://qualimap.conesalab.org/) Evaluating sequencing alignment data
@@ -36,18 +36,18 @@ Rnaseq pipeline provides meaningful programs to analyse RNA sequencing data obta
 -	[Preseq](http://smithlabresearch.org/software/preseq/) A package for predicting and estimating the complexity of a genomic sequencing library
 
 
-## **5.  Differential Expression Analysis **
+## **5.  Differential Expression Analysis**
 
 -	[DEseq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html) A package for estimating differential gene expression based on the negative binomial distribution
 
 
-## **6.  Sum up **
+## **6.  Sum up**
 
 -	[MultiQC](https://multiqc.info/) Present QC for raw read, alignment, gene biotype, sample similarity, and strand-specificity checks
 
 
 
-## **Instalation**
+## **Installation**
 
 Rnaseq is built using Nextflow, a workflow tool to run tasks across multiple compute infrastructures and it also uses Docker/Singularity containers making installation trivial and results highly reproducible. This guide covers the installation and configuration for Ubuntu.
 
@@ -123,7 +123,7 @@ nf-core list
 ```
 
 
-## ** Reference Genome Options **
+## **Reference Genome Options**
 
 One of the first choice for retrieving the most common reference genomes of diverse organisms is by means of `AWS iGenomes`, stored in AWS S3. To obtain human genome as well as its annotation, this repository contains a script `aws-igenomes.sh` that can synchronize AWS-iGenomes and download these files
 
