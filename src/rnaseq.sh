@@ -66,7 +66,7 @@ fi
 # ---------------------------------------------------------------------
 
 
-while getopts c:n:r:a:s:b:e:x:p:m:l:d:i:t: flag
+while getopts c:n:r:a:s:b:e:x:p:m:l:d:i:t:o: flag
 do
     case "${flag}" in
         c) csv=${OPTARG};;
@@ -83,6 +83,7 @@ do
         d) rRNA=${OPTARG};;
         i) idx=${OPTARG};;
         t) config=${OPTARG};;
+	o) outdir=${OPTARG};;
        \?) echo "Invalid option: $OPTARG" 1>&2;;
         :) echo "Invalid option: $OPTARG requires an argument" 1>&2;;
     esac
@@ -118,6 +119,7 @@ if [ $# -eq 0 ]; then
          -d: Text file containing paths to create the database for SortMeRNA. Options: {empty/TXT with paths}
 	 -i: Create or not a new Genome index
          -t: Setting custom parameters
+	 -o: The output directory where the results will be saved
 	    
 	 "
 
@@ -204,6 +206,16 @@ else
         # Check return value, can be 1 or 0
         printf "${csv} Using the CSV file by the user.\n"
         unset ${t}
+fi
+
+
+# Optional: Name of output directory
+if [ -z "${outdir}" ];then
+        printf "Output not provided.\n"
+        output="RNA-seq"
+else
+    printf "Output set to: ${output}.\n"
+
 fi
 
 
@@ -363,17 +375,18 @@ fi
 # ie. /datos/shared/usftp21.novogene.com/raw_data/CCC133/CCC133_1.fastq.gz 
 read=$(ls ${lib}/*_1.fastq.gz)
 	
-# Get the read name without path and extension
-#ie. CCC133
-jobName=$(basename ${read%%_*})
-        
 #Create a working directory for this Job based on library name
-mkdir -p ${jobName}
-cd $jobName
+if [[ "${output}" == "RNA-seq"  ]];then
+    dir=$(basename ${read%%_*})
+    mkdir -p ${dir}
+    outdir=$(printf "$(cd "$(dirname "${dir}")" && pwd)/$(basename "${dir}")")
+fi
+
+cd ${dir}
 
 #If CSV file was not provided, it was set to "0" above
 if [[ "${csv}" == "new"  ]];then
-    csv=${jobName}.csv
+    csv=${dir}.csv
 
     #Here we make sure that CSV file is re-created.
 
@@ -403,6 +416,7 @@ fi
 # ---------------------------------------------------------------------
 command="nextflow run nf-core/rnaseq $again \
       --input $csv \
+      --outdir $outdir \
       --skip_bbsplit \
       --remove_ribo_rna \
       --ribo_database_manifest $rRNA \
@@ -477,5 +491,5 @@ $command
 
 # Elapsed time of execution process
 end=$(date +%s)
-printf "Elapsed Time: $(($end-$start)) seconds" > ${jobName}/time.tmp
+printf "Elapsed Time: $(($end-$start)) seconds" > ${outdir}/time.tmp
 
