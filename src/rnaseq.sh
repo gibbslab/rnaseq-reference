@@ -63,6 +63,7 @@ fi
 # 12) Text file containing paths with fasta files to SortMeRNA database
 # 13) Path to indices
 # 14) Setting custom parameters
+# 15) The output directory where the results will be saved
 # ---------------------------------------------------------------------
 
 
@@ -430,7 +431,6 @@ command="nextflow run nf-core/rnaseq $again \
       --save_align_intermeds \
       --skip_markduplicates \
       --skip_stringtie \
-      --skip_deseq2_qc \
       --max_cpus $cpu \
       --max_memory $memory.GB \
       -profile docker "
@@ -444,7 +444,7 @@ fi
 # If user does not provide indices, it should include the option to create and store them
 # Append salmon_index to command line
 
-link="./results/genome"
+link="${outdir}/genome"
 
 if [[ "${idx}" == "salmon" ]];then
     mkdir -p ${link}/${idx}
