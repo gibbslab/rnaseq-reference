@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ---------------------------------------------------------------------
-# version: 1.0
+# version: 2.0
 # This script calls the nf-core/rnaseq pipeline as implemented at GiBBS
 # Institute for Genetics - National University of Colombia
 
@@ -49,42 +49,39 @@ fi
 
 # ---------------------------------------------------------------------
 # The following parameters should be provided:
+#    Mandatory
 # 1) A CSV file containing the experimental design
-# 2) Name of samples
-# 3) Reference genome
-# 4) GTF file
-# 5) Strandedness of library. Option: 'unstranded/forward/reverse'
-# 6) Aligner. Option: 'star_salmon/star_rsem/hisat2'
+# 2) Reference genome (FASTA)
+# 3) Genome annotation (GTF)
+# 4) Aligner. Option: 'star_salmon/star_rsem/hisat2'
+# 5) The output directory where the results will be saved
+#    Optional
+# 6) Text file containing paths with fasta files to SortMeRNA database
 # 7) Pseudo-aligner. Option: 'salmon'
-# 8) Optional (-x): Whether this run is a resume or a new job
-# 9) CPUs
-# 10) Max memory to be used
-# 11) Path to libraries
-# 12) Text file containing paths with fasta files to SortMeRNA database
-# 13) Path to indices
-# 14) Setting custom parameters
-# 15) The output directory where the results will be saved
+# 8) CPUs
+# 9) Max memory to be used
+# 10) (-x): Whether this run is a resume or a new job
+# 11) Setting custom parameters
+# 12) Path to indexes
 # ---------------------------------------------------------------------
 
 
-while getopts c:n:r:a:s:b:e:x:p:m:l:d:i:t:o: flag
+
+while getopts c:r:a:b:o:d:e:p:m:x:t:i: flag
 do
     case "${flag}" in
         c) csv=${OPTARG};;
-        n) name=${OPTARG};;
         r) refGenome=${OPTARG};;
         a) annotFile=${OPTARG};;
-        s) strand=${OPTARG};;
         b) align=${OPTARG};;
+	o) output=${OPTARG};;
+	d) rRNA=${OPTARG};;
         e) pseuAlign=${OPTARG};;
-        x) resume=${OPTARG};;
         p) cpu=${OPTARG};;
         m) memory=${OPTARG};;
-        l) lib=${OPTARG};;
-        d) rRNA=${OPTARG};;
-        i) idx=${OPTARG};;
+        x) resume=${OPTARG};;
         t) config=${OPTARG};;
-	o) outdir=${OPTARG};;
+        i) idx=${OPTARG};;
        \?) echo "Invalid option: $OPTARG" 1>&2;;
         :) echo "Invalid option: $OPTARG requires an argument" 1>&2;;
     esac
@@ -106,21 +103,20 @@ if [ $# -eq 0 ]; then
     echo ""
     echo " **Empty parameters! Unable to run**. Please provide the following parameters:"
     echo "
- 	 -c: CSV file containing the experimental design
-         -n: Provide name of samples
-         -r: Reference genome
-         -a: GTF file
-         -s: 'Strandness' of the library. Option: 'unstranded/forward/reverse'
-	 -b: Specifies the alignment algorithm to use. Option: 'star_salmon/star_rsem/hisat2'
-         -e: Specifies the pseudo aligner to use. Option: 'salmon'
- 	 -p: CPUs
+             Mandatory
+         -c: CSV file containing the experimental design
+         -r: Reference genome (FASTA)
+         -a: Genome annotation (GTF)
+         -b: Specifies the alignment algorithm to use. Option: 'star_salmon/star_rsem/hisat2'
+         -o: The output directory where the results will be saved
+	     Optional
+	 -d: Text file containing paths to create the database for SortMeRNA. Options: {empty/TXT with paths}
+	 -e: Pseudo-aligner. Option: 'salmon'
+         -p: CPUs
          -m: Max memory to be used (ej. -m 100.GB) Please note the syntaxis
-	 -x: Resume a previous Job. Options: y/n
-         -l: Path to libraries directory
-         -d: Text file containing paths to create the database for SortMeRNA. Options: {empty/TXT with paths}
-	 -i: Create or not a new Genome index
+         -x: Resume a previous Job. Options: y/n
          -t: Setting custom parameters
-	 -o: The output directory where the results will be saved
+	 -i: Create or not a new Genome index
 	    
 	 "
 
@@ -134,6 +130,20 @@ fi
 # steps based on whether a given parameter is set or not.
 
 # ---------------------------------------------------------------------
+
+# Mandatory: CSV file
+if [ -z "${csv}" ];then
+	printf "CSV file not provided. A single CSV file will be created per library.\n"
+        csv="new"
+else
+        # Target is a file (f)
+        t="f"
+        exists ${csv} ${t}
+        # Check return value, can be 1 or 0
+        printf "${csv} Using the CSV file by the user.\n"
+        unset ${t}
+fi
+
 
 # Mandatory: Reference Genome
 if [ -z "${refGenome}" ];then
@@ -178,40 +188,8 @@ if [ -z "${align}" ];then
 fi
 
 
-# Mandatory: Path to libraries
-if [ -z "${lib}" ];then
-	printf "Missing Path to library. Please provide it and run again.\n"
-	exit 1
-else
-	# Target is a Dir (d)
-	t="d"
-	exists ${lib} ${t}	
-	# Check return value, can be 1 or 0
-	if [ $? -eq 0 ];then
-		printf "${lib} not found. Quitting.\n"
-		exit 1	
-	fi
-	
-	unset ${t}
-fi
-
-
-# Optional: CSV file
-if [ -z "${csv}" ];then
-	printf "CSV file not provided. A single CSV file will be created per library.\n"
-        csv="new"
-else
-        # Target is a file (f)
-        t="f"
-        exists ${csv} ${t}
-        # Check return value, can be 1 or 0
-        printf "${csv} Using the CSV file by the user.\n"
-        unset ${t}
-fi
-
-
-# Optional: Name of output directory
-if [ -z "${outdir}" ];then
+# Mandatory: Name of output directory
+if [ -z "${output}" ];then
         printf "Output not provided.\n"
         output="RNA-seq"
 else
@@ -220,29 +198,26 @@ else
 fi
 
 
-# Optional: Name of samples
-if [ -z "${name}" ];then
-	printf "Name not provided.\n"
-        name="sample"
+# Optional: TXT with paths to rRNA databases
+if [ -z "${rRNA}" ];then
+	printf "Missing TXT File. Please provide it and run again.\n"
 else
-    printf "Name set to: ${name}.\n"
-    
+	# Target is a file (f)
+	t="f"
+	exists ${rRNA} ${t}	
+	# Check return value, can be 1 or 0
+	if [ $? -eq 0 ];then
+		printf "${rRNA} not found. Quitting.\n"
+		exit 1	
+	fi
+	
+	unset ${t}
 fi
 
 
 # Optional: Type of Pseudo-aliggner
 if [ -z "${pseuAlign}" ];then
 	printf "Missing Pseudo_aligner Type. Please provide the pseudo-alignment to use: salmon.\n"
-fi
-
-
-# Optional: Strandeness
-if [ -z "${strand}" ];then
-	printf "Strandness set to default: Unstranded RNAseq.\n"
-	    strand="unstranded"
-else
-    printf "Strandness set to: ${strand}.\n"
-    
 fi
 
 
@@ -273,23 +248,6 @@ else
 fi
 
 
-# Optional: TXT with paths to rRNA databases
-if [ -z "${rRNA}" ];then
-	printf "Missing TXT File. Please provide it and run again.\n"
-else
-	# Target is a file (f)
-	t="f"
-	exists ${rRNA} ${t}	
-	# Check return value, can be 1 or 0
-	if [ $? -eq 0 ];then
-		printf "${rRNA} not found. Quitting.\n"
-		exit 1	
-	fi
-	
-	unset ${t}
-fi
-
-
 # Optional: Custom config
 if [ -z "${config}" ];then
 	printf "No parameter options are supplied. You can create a local config file and use it.\n"
@@ -308,8 +266,8 @@ else
 fi
 
 
-# Optional: Path to indeces depending on the aligner type
-# NOTE: Both the STAR and RSEM indices should be present in the same path
+# Optional: Path to indexes depending on the aligner type
+# NOTE: Both the STAR and RSEM indices should be present in the path: <<{output}>>/genome/index/<<{idx}>>
 if [ -z "${idx}" ];then
 	printf "Path to Genome index not provided. We will create a new one based on aligner.\n"
         if [[ "${align}" == "star_salmon" ]] || [[ "${pseuAlign}" == "salmon" ]];then
@@ -367,63 +325,20 @@ fi
 
 
 # ---------------------------------------------------------------------
-#                   ENVIRONMENT SETUP
-# Create Directory and setup enviroment for running this Job
-# ---------------------------------------------------------------------
-
-
-# Get the name of  read
-# ie. /datos/shared/usftp21.novogene.com/raw_data/CCC133/CCC133_1.fastq.gz 
-read=$(ls ${lib}/*_1.fastq.gz)
-	
-#Create a working directory for this Job based on library name
-if [[ "${output}" == "RNA-seq"  ]];then
-    dir=$(basename ${read%%_*})
-    mkdir -p ${dir}
-    outdir=$(printf "$(cd "$(dirname "${dir}")" && pwd)/$(basename "${dir}")")
-fi
-
-cd ${dir}
-
-#If CSV file was not provided, it was set to "0" above
-if [[ "${csv}" == "new"  ]];then
-    csv=${dir}.csv
-
-    #Here we make sure that CSV file is re-created.
-
-    # header
-    printf '%s,%s,%s,%s\n' sample fastq_1 fastq_2 strandedness > ${csv}
-    
-    #values
-    for fastq_1 in ${read}
-    do
-    fastq_2="${fastq_1%_1.fastq.gz}_2.fastq.gz"
-
-    [[ -f $fastq_2 ]] || continue # may display an error message
-
-    printf '%s,%s,%s,%s\n' \
-        "${name}" \
-        "${fastq_1}" \
-        "${fastq_2}" \
-        "${strand}"
-    done  >> ${csv}
-
-fi
-
-# ---------------------------------------------------------------------
 #
 # Let's prepare the command line
 #
 # ---------------------------------------------------------------------
 command="nextflow run nf-core/rnaseq $again \
       --input $csv \
-      --outdir $outdir \
+      --outdir $output \
       --skip_bbsplit \
       --remove_ribo_rna \
       --ribo_database_manifest $rRNA \
       --save_non_ribo_reads \
       --fasta $refGenome \
       --gtf $annotFile \
+      --gencode \
       --save_reference \
       --save_trimmed \
       --aligner $align \
@@ -434,6 +349,8 @@ command="nextflow run nf-core/rnaseq $again \
       --max_cpus $cpu \
       --max_memory $memory.GB \
       -profile docker "
+      
+      
 # If the user provide a pseudo-aligner, it will be set by default
 # Append salmon as pseudo-aligner to command line
 
@@ -441,27 +358,33 @@ if [[ "${pseuAlign}" == "salmon" ]];then
     command="${command} --pseudo_aligner ${pseuAlign}"
 fi
 
-# If user does not provide indices, it should include the option to create and store them
+# If user does not provide indexes, it should include the option to create and store them
+
+
+link="${output}/genome/index"
+
+if [ -z "${idx}" ];then
+        printf "Indexes will be created.\n"
+else
+
 # Append salmon_index to command line
-
-link="${outdir}/genome"
-
-if [[ "${idx}" == "salmon" ]];then
-    mkdir -p ${link}/${idx}
-    path=$(printf "$(cd "$(dirname "${link}/${idx}")" && pwd)/$(basename "${link}/${idx}")")
-    command="${command} --salmon_index ${path}"
+    if [[ "${idx}" == "salmon" ]];then
+        mkdir -p ${link}/${idx}
+        path=$(printf "$(cd "$(dirname "${link}/${idx}")" && pwd)/$(basename "${link}/${idx}")")
+        command="${command} --salmon_index ${path}"
 
 # Append rsem_index to command line
-elif [[ "${idx}" == "rsem" ]];then
-    mkdir -p ${link}/${idx}
-    path=$(printf "$(cd "$(dirname "${link}/${idx}")" && pwd)/$(basename "${link}/${idx}")")
-    command="${command} --rsem_index ${path}"
+    elif [[ "${idx}" == "rsem" ]];then
+        mkdir -p ${link}/${idx}
+        path=$(printf "$(cd "$(dirname "${link}/${idx}")" && pwd)/$(basename "${link}/${idx}")")
+        command="${command} --rsem_index ${path}"
 
 # Append hisat2_index to command line
-else [[ "${idx}" == "hisat2" ]]
-    mkdir -p ${link}/${idx}
-    path=$(printf "$(cd "$(dirname "${link}/${idx}")" && pwd)/$(basename "${link}/${idx}")")
-    command="${command} --hisat2_index ${path}"
+    else [[ "${idx}" == "hisat2" ]]
+        mkdir -p ${link}/${idx}
+        path=$(printf "$(cd "$(dirname "${link}/${idx}")" && pwd)/$(basename "${link}/${idx}")")
+        command="${command} --hisat2_index ${path}"
+    fi
 fi
 
 # If the user provides custom settings, it is added to the pipeline
