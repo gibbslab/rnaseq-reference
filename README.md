@@ -123,6 +123,29 @@ nf-core list
 ```
 
 
+
+## **Generate Samplesheet Format**
+
+There are two methods to create the samplesheet that is used as input to `rnaseq` pipeline:
+
+1.    From `fetchngs` pipeline. It can be found as `samplesheet.csv`. Nevertheless, the absolute path of `fastq_1` and `fastq_2` columns must be modified so that the `rnaseq` pipeline can read the FastQC.
+
+2.    An executable Python script called `fastq_dir_to_samplesheet.py` has been provided if you would like to auto-create an input samplesheet based on a directory containing FastQ files before you run the pipeline (requires Python 3 installed locally)
+
+a.   Download python script
+
+```
+wget -L https://raw.githubusercontent.com/nf-core/rnaseq/master/bin/fastq_dir_to_samplesheet.py
+```
+
+b.   Use as follows
+
+```
+./fastq_dir_to_samplesheet.py <FASTQ_DIR> samplesheet.csv --strandedness reverse
+```
+
+
+
 ## **Reference Genome Options**
 
 One of the first choice for retrieving the most common reference genomes of diverse organisms is by means of `AWS iGenomes`, stored in AWS S3. To obtain human genome as well as its annotation, this repository contains a script `aws-igenomes.sh` that can synchronize AWS-iGenomes and download these files
@@ -132,12 +155,25 @@ curl -fsSL https://ewels.github.io/AWS-iGenomes/aws-igenomes.sh > aws-igenomes.s
 ```
 
 
+
+## **Path to genome indexes**
+
+If you manually provide the genome indexes, it is important to keep in mind that they must be in the following path
+
+```
+<{output}>/genome/index/<{idx}>
+```
+
+where `output` is the folder name containing the results and `idx` the indexes such as `rsem`, `hisat2` and `salmon`
+
+
+
 ## **Usage**
 
 To perform an RNA-seq data analysis, the script `scr/rnaseq.sh` was implemented to systematically prepare, validate, and generate the results of pipeline
 
 ```
-bash rnaseq.sh -c ~/Astrocyte.csv -r ~/references/Homo_sapiens/Ensembl/GRCh38/Sequence/WholeGenomeFasta/genome.fa -a ~/references/Homo_sapiens/Ensembl/GRCh38/Annotation/Genes/genes.gtf.gz -s unstranded -b star_rsem -p 30 -m 230 -x n -l ~/Astrocyte/SRA_Astrocyte/results/fastq/ -d ~/Astrocyte/rRNA_database/rRNA-paths.txt
+bash rnaseq.sh -c file.csv -r genome.fa -a genes.gtf -b star_rsem -o results -d rRNA-paths.txt -p 30 -m 230 -x n
 ```
 
 
@@ -146,41 +182,36 @@ bash rnaseq.sh -c ~/Astrocyte.csv -r ~/references/Homo_sapiens/Ensembl/GRCh38/Se
 
 ### **Mandatory**
 
+-	`-c:` Samplesheet file containing information about the samples in the experiment. An example is available in `data`
 
--	`-r:` Reference genome
+-	`-r:` Reference genome (FASTA)
 
--	`-a:` GTF annotation file
+-	`-a:` Genome annotation (GTF)
 
--	`-b:` Specifies the alignment algorithm to use. Available options are: `star_salmon`, `star_rsem` and `hisat2`
+-	`-b:` Specifies the alignment algorithm to use. Available options are: `star_salmon`, `star_rsem` or `hisat2`
+
+-	`-o:` The output directory where the results will be saved
 
 
 ### **Optional**
 
-
--	`-c:` Samplesheet file containing information about the samples in the experiment. If this is provided, the `-n` option is not needed, otherwise it is recommended to create the file. An example is available in `data`
-
--	`-n:`  Sample name to be included in the first column of samplesheet file
-
--	`-x: ` This execution is a resume of a previous run or it is a new run. The options are: `y` or `n`
-
--	`-s:` Strandness of the library. Available options are: `unstranded`, `forward` and `reverse`
-
--	`-e:` Specifies the pseudo aligner to use. Available option is: `salmon`
-
 -	`-d:` Text file containing paths to fasta files (one per line) that will be used to create the database for SortMeRNA. An example is available in `data`
 
--	`-i:` Create or not a new Genome index. If not specified, it will be created based on the type of aligner supplied
+-	`-e:` Specifies the pseudo aligner to use. Available option is: `salmon`
 
 -	`-p:` CPUs
 
 -	`-m:` Max memory to be used
 
+-	`-x:` This execution is a resume of a previous run or it is a new run. The options are: `y` or `n`
+
 - `-t:` A custom configuration file to be used in the pipeline. An example is shown in `data` folder
+
+-	`-i:` Create or not a new Genome index. If not specified, it will be created based on the type of aligner supplied
 
 
 
 ## **Running in the background**
-
 
 The Nextflow `-bg` flag launches Nextflow in the background or alternatively, you can use `screen/tmux` or similar tool to create a detached session which you can log back into at a later time
 
@@ -188,9 +219,9 @@ The Nextflow `-bg` flag launches Nextflow in the background or alternatively, yo
 
 ## **Result**
 
-The script will create a local directory based on the libraries name. Within this directory, the following will be found
+The script will create a local directory based on the given output name showing the following folders:
 
--	`result:` Contains the results of RNA-seq analysis
+-	`output_name:` Contains the results of RNA-seq analysis
 
 -	`work:` Contains the main pipeline workflows
 
