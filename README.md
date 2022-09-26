@@ -156,7 +156,7 @@ curl -fsSL https://ewels.github.io/AWS-iGenomes/aws-igenomes.sh > aws-igenomes.s
 
 
 
-## **Path to genome indexes**
+## **Path To Genome Indexes**
 
 If you manually provide the genome indexes, it is important to keep in mind that they must be in the following path
 
@@ -211,7 +211,7 @@ bash rnaseq.sh -c file.csv -r genome.fa -a genes.gtf -b star_rsem -o results -d 
 
 
 
-## **Running in the background**
+## **Running In The Background**
 
 The Nextflow `-bg` flag launches Nextflow in the background or alternatively, you can use `screen/tmux` or similar tool to create a detached session which you can log back into at a later time
 
